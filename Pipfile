@@ -8,9 +8,13 @@ bs4 = "*"
 pytz = "*"
 requests = "*"
 waybackpy = "*"
+html-to-csv = "*"
+lxml = "*"
+html5lib = "*"
 
 [dev-packages]
 ipykernel = "*"
+autopep8 = "*"
 
 [requires]
 python_version = "3.9"

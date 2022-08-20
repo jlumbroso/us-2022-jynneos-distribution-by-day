@@ -37,12 +37,22 @@ def next_day(year, month, day):
     return (date.year, date.month, date.day)
 
 
+def in_future(year, month, day):
+
+    try:
+        date = datetime.datetime(
+            year=year, month=month, day=day, tzinfo=TIMEZONE)
+    except ValueError:
+        return False
+
+    return date > datetime.datetime.now(TIMEZONE)
+
+
 class DailyEventMonitor:
 
     def __init__(self, filename=None, data=None):
         self._data = dict()
         self._filename = None
-
         if data is not None:
             self._data = copy.deepcopy(data)
 
