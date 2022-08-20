@@ -11,6 +11,7 @@ waybackpy = "*"
 html-to-csv = "*"
 lxml = "*"
 html5lib = "*"
+matplotlib = "*"
 
 [dev-packages]
 ipykernel = "*"
