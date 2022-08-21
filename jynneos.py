@@ -10,6 +10,9 @@ import waybackpy
 
 import helpers
 
+#
+WAYBACK_START = (2022, 7, 1)
+
 # User agent
 USER_AGENT = (
     "Jynneos scraper [https://github.com/jlumbroso/us-2022-jynneos-distribution-by-day]"
@@ -103,7 +106,7 @@ def normalize_jynneos_table_data(
 
 def parse_jynneos_table_data(
     html: typing.Union[str, bytes]
-) -> typing.List[typing.List[str]]:
+) -> typing.List[typing.Dict[str, str]]:
     s = bs4.BeautifulSoup(html, features="html.parser")
 
     table_element = s.find("div", {"class": "table-responsive"}).find("table")
@@ -127,7 +130,7 @@ def parse_jynneos_table_data(
     for entry in entries:
 
         # normalize the "All Jurisdiction" caption
-        if "all " in entry["Jurisdiction"].lower():
+        if re.match("^all([^a-z]|$)", entry["Jurisdiction"].lower()) is not None:
             entry["Jurisdiction"] = "All"
 
         # substitute some key names
@@ -163,6 +166,15 @@ def fetch_jynneos_table_near(year, month, day):
     return entries
 
 
+def fetch_jynneos_table_now():
+
+    r = requests.get(BASE_URL_JYNNEOS_US_DISTRIB)
+
+    entries = parse_jynneos_table_data(r.content)
+
+    return entries
+
+
 def post_process_jynneos_longitudinal_data(table_data):
     def clean_key(key):
         tokens = key.split("(", 1)
@@ -189,3 +201,57 @@ def post_process_jynneos_longitudinal_data(table_data):
     }
 
     return cleaned_table_data
+
+
+####
+# Putting it all together
+
+
+def scrape_longitudinal(start=None, postprocess=True):
+    start = start or WAYBACK_START
+    year, month, day = start
+    prev_data = None
+
+    data = dict()
+
+    while not helpers.in_future(year, month, day):
+        new_data = fetch_jynneos_table_near(year, month, day)
+
+        if prev_data is None or [i for i in new_data if i not in prev_data] != []:
+            for data_entry in new_data:
+                data_key = data_entry.get(KEY, "").strip()
+                if data_key == "":
+                    continue
+                for key, value in data_entry.items():
+                    if key == KEY:
+                        continue
+                    data[data_key] = data.get(data_key, dict())
+                    data[data_key][
+                        "{} ({}-{:02}-{:02})".format(key, year, month, day)
+                    ] = value
+
+        year, month, day = helpers.next_day(year, month, day)
+        prev_data = new_data
+
+    # Recent data
+    # FIXME: avoid code duplication!
+    new_data = fetch_jynneos_table_now()
+    if prev_data is None or [i for i in new_data if i not in prev_data] != []:
+        for data_entry in new_data:
+            data_key = data_entry.get(KEY, "").strip()
+            if data_key == "":
+                continue
+
+            for key, value in data_entry.items():
+                if key == KEY:
+                    continue
+                data[data_key] = data.get(data_key, dict())
+                data[data_key][
+                    "{} ({}-{:02}-{:02})".format(key, year, month, day)
+                ] = value
+
+    # post-process the data
+    if postprocess:
+        data = post_process_jynneos_longitudinal_data(data)
+
+    return data

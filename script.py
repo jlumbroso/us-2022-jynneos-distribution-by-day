@@ -26,10 +26,12 @@ def scrape_waybackpy(start=None, postprocess=True):
 
         if prev_data is None or [i for i in new_data if i not in prev_data] != []:
             for data_entry in new_data:
-                data_key = data_entry.get(jynneos.KEY, "")
-                if data_key.strip() == "":
+                data_key = data_entry.get(jynneos.KEY, "").strip()
+                if data_key == "":
                     continue
                 for key, value in data_entry.items():
+                    if key == jynneos.KEY:
+                        continue
                     data[data_key] = data.get(data_key, dict())
                     data[data_key][
                         "{} ({}-{:02}-{:02})".format(key, year, month, day)
@@ -37,6 +39,21 @@ def scrape_waybackpy(start=None, postprocess=True):
 
         year, month, day = helpers.next_day(year, month, day)
         prev_data = new_data
+
+    new_data = jynneos.fetch_jynneos_table_now()
+    if prev_data is None or [i for i in new_data if i not in prev_data] != []:
+        for data_entry in new_data:
+            data_key = data_entry.get(jynneos.KEY, "").strip()
+            if data_key == "":
+                continue
+
+            for key, value in data_entry.items():
+                if key == jynneos.KEY:
+                    continue
+                data[data_key] = data.get(data_key, dict())
+                data[data_key][
+                    "{} ({}-{:02}-{:02})".format(key, year, month, day)
+                ] = value
 
     # post-process the data
     if postprocess:
