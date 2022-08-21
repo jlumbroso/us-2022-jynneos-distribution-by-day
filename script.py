@@ -5,61 +5,91 @@ import os
 import pathlib
 import typing
 
-import pytz
-import requests
-
 import helpers
 import jynneos
 
-WAYBACK_START = (2022, 7, 1)
+DATA_FILE = "data/index.json"
 
 
-def scrape_waybackpy(start=None, postprocess=True):
-    start = start or WAYBACK_START
-    year, month, day = start
-    prev_data = None
+class Storage:
+    def __init__(self, filename=None, data=None):
+        self._data = dict()
+        self._filename = None
 
-    data = dict()
+        if data is not None:
+            self._data = copy.deepcopy(data)
 
-    while not helpers.in_future(year, month, day):
-        new_data = jynneos.fetch_jynneos_table_near(year, month, day)
+        if filename is not None:
+            self.load(filename)
 
-        if prev_data is None or [i for i in new_data if i not in prev_data] != []:
-            for data_entry in new_data:
-                data_key = data_entry.get(jynneos.KEY, "").strip()
-                if data_key == "":
-                    continue
-                for key, value in data_entry.items():
-                    if key == jynneos.KEY:
-                        continue
-                    data[data_key] = data.get(data_key, dict())
-                    data[data_key][
-                        "{} ({}-{:02}-{:02})".format(key, year, month, day)
-                    ] = value
+    def load(self, filename=None):
+        filename = filename or self._filename
+        if filename is None:
+            raise ValueError("no filename available!")
 
-        year, month, day = helpers.next_day(year, month, day)
-        prev_data = new_data
+        self._filename = filename
 
-    new_data = jynneos.fetch_jynneos_table_now()
-    if prev_data is None or [i for i in new_data if i not in prev_data] != []:
-        for data_entry in new_data:
-            data_key = data_entry.get(jynneos.KEY, "").strip()
-            if data_key == "":
-                continue
+        try:
+            with open(filename) as f:
+                try:
+                    data = json.loads(
+                        f.read().replace("\u200b", "").replace(r"\u200b", "")
+                    )
+                    self._data = data
+                    self._filename = filename
+                    return True
+                except:
+                    return False
+        except:
+            return False
 
-            for key, value in data_entry.items():
-                if key == jynneos.KEY:
-                    continue
-                data[data_key] = data.get(data_key, dict())
-                data[data_key][
-                    "{} ({}-{:02}-{:02})".format(key, year, month, day)
-                ] = value
+    def save(self, filename=None):
+        filename = filename or self._filename
+        if filename is None:
+            raise ValueError("no filename available!")
 
-    # post-process the data
-    if postprocess:
-        data = jynneos.post_process_jynneos_longitudinal_data(data)
+        # ensure the folder where we output the file exists
+        pathlib.Path(os.path.dirname(filename)).mkdir(parents=True, exist_ok=True)
 
-    return data
+        with open(filename, "w") as f:
+            f.write(
+                json.dumps(self._data, indent=2)
+                .replace("\u200b", "")
+                .replace(r"\u200b", "")
+            )
+            self._filename = filename
+
+    @property
+    def data(self):
+        return copy.deepcopy(self._data)
+
+
+# update
+st = Storage(DATA_FILE)
+if st.data is not None and len(st.data) > 0:
+    current_data = st.data
+
+    # get the last update
+    last_timestamp = list(current_data["All"].keys())[-1]
+    year, month, day = list(map(int, last_timestamp.splt("-")))
+    start = helpers.next_day(year, month, day)
+
+    # fetch new data
+    new_data = jynneos.scrape_longitudinal(start=start)
+
+    # update the data
+    for key, value in new_data.items():
+        if key in current_data:
+            current_data[key].update(value)
+        else:
+            current_data[key] = value
+
+    st._data = current_data
+
+else:
+    st._data = jynneos.scrape_longitudinal()
+
+st.save()
 
 
 # output something in "./data"

@@ -37,18 +37,23 @@ SUBSTITUTIONS_COLUMNS = {
     "Total Allocation": "Total allocation",
     "Total Distribution": "Total distribution",
     "Total Distribution (Doses)\u200b": "Total distribution",
+    "Total Distribution (Doses)": "Total distribution",
     "Total Doses    Shipped or Deployedas of July 27, 8AM\u200b": "Total shipped as of 2022-07-27",
+    "Total Doses    Shipped or Deployedas of July 27, 8AM": "Total shipped as of 2022-07-27",
     "Total Requested": "Total requested",
     "Total Requested as of July 27 at 8AM": "Total requested as of 2022-07-27",
     "Total Requestedas of Aug 03 2022, 12pm": "Total requested as of 2022-08-03",
     "Total Requestedas of Aug 08 2022, 12pm": "Total requested as of 2022-08-08",
     "Total Requestedas of Aug 10 2022, 12pm": "Total requested as of 2022-08-10",
     "Total Requestedas of Aug 12\u200b 2022, 12pm": "Total requested as of 2022-08-12",
+    "Total Requestedas of Aug 12 2022, 12pm": "Total requested as of 2022-08-12",
     "Total Shippedas of Aug 03 2022, 12pm": "Total shipped as of 2022-08-03",
     "Total Shippedas of Aug 08 2022, 12pm": "Total shipped as of 2022-08-08",
     "Total Shippedas of Aug 10 2022, 12pm": "Total shipped as of 2022-08-10",
     "Total Shippedas of Aug 12 2022, 12\u200bpm": "Total shipped as of 2022-08-12",
+    "Total Shippedas of Aug 12 2022, 12": "Total shipped as of 2022-08-12",
     "Total Shipped\xa0(Doses)\u200b": "Total shipped",
+    "Total Shipped\xa0(Doses)": "Total shipped",
 }
 
 # Substitutions for the jurisdiction names
@@ -69,6 +74,7 @@ SUBSTITUTIONS_JURISDICTION = {
     "Pennsylvania - Philadelphia": "Philadelphia",
     "Philadelphia": "Philadelphia",
     "Philadelphia - Other": "Pennsylvania",
+    "Tenne ssee": "Tennessee",
     "Texas": "Texas",
     "Texas - Houston": "Houston",
     "Texas - Other": "Texas",
@@ -85,8 +91,8 @@ def normalize_jynneos_table_data(
 
     def norm_comp(s1, s2):
         return (
-            re.sub(r"[\s\u200b*]+", "", s1).lower()
-            == re.sub(r"[\s\u200b*]+", "", s2).lower()
+            re.sub("[\s\u200b*]+", "", s1).lower()
+            == re.sub("[\s\u200b*]+", "", s2).lower()
         )
 
     for rowdata in table_data:
@@ -94,7 +100,7 @@ def normalize_jynneos_table_data(
         # clean up the jurisdiction name
         if KEY in rowdata:
             keyname = rowdata[KEY]
-            keyname = re.sub(r"[\s\u200b*]+", " ", keyname).strip()
+            keyname = re.sub("[\s\u200b*]+", " ", keyname).strip()
             for old, new in SUBSTITUTIONS_JURISDICTION.items():
                 if norm_comp(old, keyname):
                     keyname = new
@@ -177,7 +183,7 @@ def fetch_jynneos_table_now():
 
 def post_process_jynneos_longitudinal_data(table_data):
     def clean_key(key):
-        tokens = key.split("(", 1)
+        tokens = key.rsplit("(", 1)
         if len(tokens) != 2:
             return key
 

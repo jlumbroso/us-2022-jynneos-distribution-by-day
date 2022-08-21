@@ -57,7 +57,7 @@ def convert_if_numeric(s: str) -> typing.Union[str, int]:
     :rtype: typing.Union[str, int]
     """
     try:
-        stripped_s = re.sub(r"[\s*\u200b]+", "", s).strip(STRIP_NUMERIC_CHARS).strip()
+        stripped_s = re.sub("[\s*\u200b]+", "", s).strip(STRIP_NUMERIC_CHARS).strip()
         return locale.atoi(stripped_s)
     except ValueError:
         return s.strip()
