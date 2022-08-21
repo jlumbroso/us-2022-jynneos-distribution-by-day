@@ -220,7 +220,7 @@ def scrape_longitudinal(start=None, postprocess=True):
 
     data = dict()
 
-    while not helpers.in_future(year, month, day):
+    while not helpers.in_future(year, month, day + 1):
         new_data = fetch_jynneos_table_near(year, month, day)
 
         if prev_data is None or [i for i in new_data if i not in prev_data] != []:
