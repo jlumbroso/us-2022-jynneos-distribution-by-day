@@ -71,7 +71,7 @@ if st.data is not None and len(st.data) > 0:
 
     # get the last update
     last_timestamp = list(current_data["All"].keys())[-1]
-    year, month, day = list(map(int, last_timestamp.splt("-")))
+    year, month, day = list(map(int, last_timestamp.split("-")))
     start = helpers.next_day(year, month, day)
 
     # fetch new data
